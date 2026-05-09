@@ -1,116 +1,134 @@
 'use client';
-import { motion } from 'framer-motion';
 import { useState } from 'react';
-import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Check, Loader2 } from 'lucide-react';
+import { createClient } from '../../lib/supabase/client';
+
+const TIERS = [
+  {
+    name: 'Hobby',
+    price: '$0',
+    description: 'Perfect for exploring the API.',
+    features: ['100 API Calls / mo', 'Community Support', 'Edge Network'],
+    buttonText: 'Start Free',
+    variantId: process.env.NEXT_PUBLIC_LEMON_SQUEEZY_HOBBY_VARIANT || 'hobby',
+    isFree: true
+  },
+  {
+    name: 'Pro',
+    price: '$29',
+    period: '/mo',
+    description: 'For production workloads.',
+    features: ['10,000 API Calls / mo', 'Priority Support', 'Custom Domains', 'Advanced Analytics'],
+    buttonText: 'Subscribe Now',
+    variantId: process.env.NEXT_PUBLIC_LEMON_SQUEEZY_PRO_VARIANT || 'pro',
+    isPopular: true
+  },
+  {
+    name: 'Enterprise',
+    price: 'Custom',
+    description: 'Dedicated support and infrastructure.',
+    features: ['Unlimited Calls', '24/7 SLA', 'Dedicated Account Manager', 'Custom Contracts'],
+    buttonText: 'Contact Sales',
+    variantId: 'enterprise'
+  }
+];
 
 export default function Pricing() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(null);
+  const supabase = createClient();
 
-  const handleUpgrade = async () => {
+  const handleSubscribe = async (tier) => {
+    if (tier.isFree || tier.variantId === 'enterprise') {
+      window.location.href = '/signup';
+      return;
+    }
+
     try {
-      setLoading(true);
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-      });
-      const data = await res.json();
+      setLoading(tier.name);
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      } else {
-        alert('Failed to generate checkout link');
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          variantId: tier.variantId,
+          userEmail: session?.user?.email 
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session');
       }
-    } catch (err) {
-      console.error(err);
-      alert('An error occurred');
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
+    } catch (error) {
+      alert(`Checkout Error: ${error.message}`);
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
   return (
-    <main className="min-h-screen bg-black text-white selection:bg-blue-500/30">
-      <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <Link href="/" className="text-2xl font-bold tracking-tighter">
-          Omni<span className="text-blue-500">Scale</span>
-        </Link>
-      </nav>
+    <div className="max-w-7xl mx-auto px-6 py-24">
+      <div className="text-center mb-16">
+        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Simple, transparent pricing</h1>
+        <p className="text-xl text-white/60">Scale your AI infrastructure without scaling your costs.</p>
+      </div>
 
-      <section className="pt-20 pb-24 px-4 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <motion.h1 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        {TIERS.map((tier, i) => (
+          <motion.div
+            key={tier.name}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4"
+            transition={{ delay: i * 0.1 }}
+            className={`glass-panel p-8 rounded-3xl relative flex flex-col ${tier.isPopular ? 'border-primary ring-1 ring-primary/50' : 'border-white/10'}`}
           >
-            Transparent, usage-based pricing.
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-zinc-400 text-lg max-w-2xl mx-auto"
-          >
-            Scale your AI operations without breaking the bank.
-          </motion.p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Starter Plan */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="p-8 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm"
-          >
-            <h3 className="text-xl font-semibold mb-2">Starter</h3>
-            <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-bold">$0</span>
-              <span className="text-zinc-500">/month</span>
+            {tier.isPopular && (
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                Most Popular
+              </div>
+            )}
+            
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold text-white mb-2">{tier.name}</h3>
+              <p className="text-sm text-white/60 mb-6 h-10">{tier.description}</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-white">{tier.price}</span>
+                {tier.period && <span className="text-white/60">{tier.period}</span>}
+              </div>
             </div>
-            <ul className="space-y-4 mb-8">
-              <li className="flex gap-3 text-zinc-300"><Check className="w-5 h-5 text-blue-500 shrink-0" /> Up to 100k requests/mo</li>
-              <li className="flex gap-3 text-zinc-300"><Check className="w-5 h-5 text-blue-500 shrink-0" /> Basic Gateway routing</li>
-              <li className="flex gap-3 text-zinc-300"><Check className="w-5 h-5 text-blue-500 shrink-0" /> Community support</li>
+
+            <ul className="space-y-4 mb-8 flex-1">
+              {tier.features.map(feature => (
+                <li key={feature} className="flex items-center gap-3 text-sm text-white/80">
+                  <div className="p-1 bg-primary/20 rounded-full text-primary">
+                    <Check className="w-3 h-3" />
+                  </div>
+                  {feature}
+                </li>
+              ))}
             </ul>
-            <Link 
-              href="/signup"
-              className="block w-full py-3 px-4 rounded-xl border border-white/20 text-center font-medium hover:bg-white/5 transition"
-            >
-              Start Free Trial
-            </Link>
-          </motion.div>
 
-          {/* Enterprise Plan */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="relative p-8 rounded-3xl border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm"
-          >
-            <div className="absolute top-0 right-8 -translate-y-1/2 px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full">
-              MOST POPULAR
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Enterprise</h3>
-            <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-bold">$999</span>
-              <span className="text-blue-300/70">/month</span>
-            </div>
-            <ul className="space-y-4 mb-8">
-              <li className="flex gap-3 text-zinc-200"><Check className="w-5 h-5 text-blue-400 shrink-0" /> Unlimited requests</li>
-              <li className="flex gap-3 text-zinc-200"><Check className="w-5 h-5 text-blue-400 shrink-0" /> Advanced token optimization</li>
-              <li className="flex gap-3 text-zinc-200"><Check className="w-5 h-5 text-blue-400 shrink-0" /> Dedicated SLA & Support</li>
-            </ul>
-            <button 
-              onClick={handleUpgrade}
-              disabled={loading}
-              className="w-full py-3 px-4 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50"
+            <button
+              onClick={() => handleSubscribe(tier)}
+              disabled={loading === tier.name}
+              className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center transition-all ${
+                tier.isPopular 
+                  ? 'bg-primary text-primary-foreground hover:opacity-90 shadow-[0_0_20px_rgba(59,130,246,0.3)]' 
+                  : 'glass hover:bg-white/10 text-white'
+              }`}
             >
-              {loading ? 'Processing...' : 'Upgrade to Enterprise'}
+              {loading === tier.name ? <Loader2 className="w-5 h-5 animate-spin" /> : tier.buttonText}
             </button>
           </motion.div>
-        </div>
-      </section>
-    </main>
+        ))}
+      </div>
+    </div>
   );
 }
