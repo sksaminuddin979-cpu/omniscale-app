@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Loader2, Sparkles, Zap, Shield, Crown } from 'lucide-react';
+import { Check, Loader2, Sparkles, Zap, Shield, Crown, ArrowRight } from 'lucide-react';
 import { createClient } from '../../lib/supabase/client';
 
 const TIERS = [
