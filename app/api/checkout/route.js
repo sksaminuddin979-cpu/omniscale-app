@@ -13,35 +13,35 @@ export async function POST(req) {
 
     const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
     if (!apiKey) {
-      // Graceful error handling for missing API key
+      console.error('LEMON_SQUEEZY_API_KEY missing from Edge runtime!');
       return NextResponse.json({ 
-        error: 'Lemon Squeezy API key is not configured. Please add it to your environment variables.' 
+        error: 'Payment gateway configuration error.' 
       }, { status: 500 });
     }
 
-    // Configure the Lemon Squeezy SDK
     lemonSqueezySetup({ apiKey });
 
-    // Ensure we have a valid store ID configured
     const storeId = process.env.LEMON_SQUEEZY_STORE_ID;
     if (!storeId) {
+       console.error('LEMON_SQUEEZY_STORE_ID missing from Edge runtime!');
        return NextResponse.json({ 
-        error: 'Lemon Squeezy Store ID is not configured.' 
+        error: 'Store configuration error.' 
       }, { status: 500 });
     }
 
-    // Create the checkout
+    console.log('Creating checkout for:', { userEmail, variantId, storeId, testMode: true });
+
     const { error, data } = await createCheckout(storeId, variantId, {
       checkoutData: {
         email: userEmail || undefined,
         custom: {
-          user_id: userEmail // Or actual user ID
+          user_id: userEmail
         }
       },
       productOptions: {
         redirectUrl: `${new URL(req.url).origin}/dashboard?checkout=success`,
       },
-      testMode: true // Force test mode for safe development/testing
+      testMode: true 
     });
 
     if (error) {
@@ -53,10 +53,10 @@ export async function POST(req) {
       return NextResponse.json({ checkoutUrl: data.data.attributes.url });
     }
 
-    return NextResponse.json({ error: 'Checkout URL not returned from provider' }, { status: 500 });
+    return NextResponse.json({ error: 'Invalid response from payment provider' }, { status: 500 });
     
   } catch (error) {
-    console.error('Checkout Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Checkout Edge Exception:', error);
+    return NextResponse.json({ error: 'Internal edge error during checkout.' }, { status: 500 });
   }
 }
