@@ -64,7 +64,7 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="text-xl md:text-2xl text-white/60 mb-12 max-w-3xl leading-relaxed font-light"
           >
-            The world's most advanced AI Gateway. Route, rate-limit, and monetize your LLM traffic with absolute precision on Cloudflare's global network.
+            The world&apos;s most advanced AI Gateway. Route, rate-limit, and monetize your LLM traffic with absolute precision on Cloudflare&apos;s global network.
           </motion.p>
           
           <motion.div 
@@ -98,7 +98,7 @@ export default function Home() {
             { icon: Shield, title: "Enterprise Security", desc: "Supabase row-level security and JWT authentication out of the box." },
             { icon: Zap, title: "Instant Monetization", desc: "Bulletproof Lemon Squeezy integration for subscription billing." },
             { icon: Cpu, title: "Model Agnostic", desc: "Seamlessly route between OpenAI, Gemini, Claude, and local models." },
-            { icon: Lock, title: "Privacy First", desc: "End-to-end encryption. We never store your users' prompts or completions." },
+            { icon: Lock, title: "Privacy First", desc: "End-to-end encryption. We never store your users&apos; prompts or completions." },
             { icon: Layers, title: "Infinite Scalability", desc: "Architecture designed to handle millions of requests without breaking a sweat." }
           ].map((feature, i) => (
             <motion.div 
